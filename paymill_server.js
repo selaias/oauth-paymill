@@ -7,27 +7,25 @@ Paymill = {};
 OAuth.registerService('paymill', 2, null, function(query, callback) {
 
   var response = getTokenResponse(query);
-  var accessToken = response.access_token;
-  var userData = getUserData(accessToken);
   
- 
+  var accessToken = response.access_token;
+  var refreshToken = response.refresh_token;
+
   var serviceData = {
     accessToken: accessToken,
-    expiresAt: (+new Date) + (1000 * response.expires_in),
-    id: userData.merchant_id,
-    email: userData.email
+    refreshToken: refreshToken,
+    id: response.merchant_id,
+    email: response.email
   };
+  
+  var whitelisted = ['methods', 'currencies', 'payment_methods', 'is_active', 'livemode'];
 
-  // include all fields from paymill
-  // http://developer.paymill.com/healthgraph/profile
-  var whitelisted = ['methods', 'currencies', 'payment_methods', 'is_active'];
-
-  var fields = _.pick(userData, whitelisted);
+  var fields = _.pick(response, whitelisted);
   _.extend(serviceData, fields);
-
+  
   return {
     serviceData: serviceData,
-    options: {profile: {name: userData.first_name + ' ' + userData.last_name }}
+    options: {profile: {merchant_id: response.merchant_id}}
   };
 });
 
@@ -38,7 +36,7 @@ if (Meteor.release)
 
 // returns an object containing:
 // - accessToken
-// - expiresIn: lifetime of token in seconds
+// - merchant data
 var getTokenResponse = function (query) {
 
   var config = ServiceConfiguration.configurations.findOne({service: 'paymill'});
@@ -55,7 +53,8 @@ var getTokenResponse = function (query) {
   var paramlist = [];
   for (var pk in request_params) {
     paramlist.push(pk + "=" + request_params[pk]);
-  };
+  }
+  
   var body_string = paramlist.join("&");
 
   var request_details = {
@@ -79,34 +78,6 @@ var getTokenResponse = function (query) {
   });
   var res = fut.wait();
   return res;
-};
-
-//////////////////////////////////////////////// 
-// We need to first fetch the UserID
-////////////////////////////////////////////////
-var getUserData = function (accessToken) {
-  
-  var fut = new Future();
-  var request_user = {
-    method: 'GET',
-    headers: {'User-Agent': userAgent,  'Content-Type': 'application/json',
-              'Authorization' : 'Bearer ' + accessToken},
-    uri: "https://connect.paymill.com/token"
-  };
-
-  request(request_user, function(error, response, body) {
-    var responseContent;
-    try {
-      responseContent = JSON.parse(body);
-    } catch(e) {
-      error = new Meteor.Error(204, 'Response is not a valid JSON string.');
-      fut.throw(error);
-    } finally {
-      fut.return(responseContent);
-    }
-  });
-  var userRes = fut.wait();
-  return userRes;
 };
 
 Paymill.retrieveCredential = function(credentialToken, credentialSecret) {
