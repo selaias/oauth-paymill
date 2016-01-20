@@ -1,6 +1,6 @@
 Package.describe({
   name: 'selaias:oauth-paymill',
-  version: '0.2.0',
+  version: '0.3.0',
   summary: 'An implementation of the Paymill OAuth flow.',
   git: 'https://github.com/selaias/oauth-paymill.git',
   documentation: 'README.md'

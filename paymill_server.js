@@ -18,7 +18,7 @@ OAuth.registerService('paymill', 2, null, function(query, callback) {
     email: response.email
   };
   
-  var whitelisted = ['methods', 'currencies', 'payment_methods', 'is_active', 'livemode'];
+  var whitelisted = ['methods', 'currencies', 'payment_methods', 'is_active', 'livemode', 'access_keys'];
 
   var fields = _.pick(response, whitelisted);
   _.extend(serviceData, fields);
